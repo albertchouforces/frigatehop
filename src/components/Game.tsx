@@ -29,18 +29,34 @@ export const Game = () => {
     const updateCanvasSize = () => {
       if (!containerRef.current) return;
 
-      // Get the viewport width and account for padding
-      const viewportWidth = Math.min(window.innerWidth, window.document.documentElement.clientWidth);
-      const padding = isMobile ? 16 : 32; // Less padding on mobile
-      const availableWidth = viewportWidth - (padding * 2);
+      // Get the viewport dimensions
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
       
-      // Determine the maximum width while respecting constraints
-      const maxWidth = Math.min(availableWidth, MAX_CANVAS_WIDTH);
-      const height = maxWidth / CANVAS_ASPECT_RATIO;
+      // Calculate available space considering the padding
+      const padding = isMobile ? 8 : 16; // Reduced padding for mobile
+      const availableWidth = viewportWidth - (padding * 2);
+      const availableHeight = viewportHeight - (padding * 2);
+
+      // Calculate dimensions maintaining aspect ratio
+      let width = availableWidth;
+      let height = width / CANVAS_ASPECT_RATIO;
+
+      // If height exceeds available height, scale based on height instead
+      if (height > availableHeight) {
+        height = availableHeight;
+        width = height * CANVAS_ASPECT_RATIO;
+      }
+
+      // Apply max width constraint
+      if (width > MAX_CANVAS_WIDTH) {
+        width = MAX_CANVAS_WIDTH;
+        height = width / CANVAS_ASPECT_RATIO;
+      }
 
       setCanvasSize({
-        width: maxWidth,
-        height: height
+        width,
+        height
       });
     };
 
@@ -76,35 +92,29 @@ export const Game = () => {
 
   const containerStyle = {
     width: '100%',
+    height: '100%',
     maxWidth: `${MAX_CANVAS_WIDTH}px`,
     margin: '0 auto',
     padding: isMobile ? '8px' : '16px',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
   };
 
-  const wrapperStyle = {
-    position: 'relative' as const,
+  const canvasContainerStyle = {
     width: '100%',
-    paddingBottom: `${(1 / CANVAS_ASPECT_RATIO) * 100}%`,
-  };
-
-  const contentStyle = {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative' as const,
   };
 
   if (!gameStarted && assetsLoaded) {
     return (
       <div ref={containerRef} style={containerStyle}>
-        <div style={wrapperStyle}>
-          <div style={contentStyle}>
-            <StartScreen onStartGame={handleStartGame} />
-          </div>
+        <div style={canvasContainerStyle}>
+          <StartScreen onStartGame={handleStartGame} />
         </div>
       </div>
     );
@@ -113,8 +123,8 @@ export const Game = () => {
   if (!assetsLoaded) {
     return (
       <div ref={containerRef} style={containerStyle}>
-        <div style={wrapperStyle}>
-          <div style={contentStyle} className="bg-gray-900/50">
+        <div style={canvasContainerStyle}>
+          <div className="bg-gray-900/50 p-4 rounded-lg">
             <div className="text-white text-xl">Loading assets...</div>
           </div>
         </div>
@@ -124,24 +134,26 @@ export const Game = () => {
 
   return (
     <div ref={containerRef} style={containerStyle}>
-      <div style={wrapperStyle}>
+      <div style={canvasContainerStyle}>
         <canvas
           ref={canvasRef}
           width={BASE_CANVAS_WIDTH}
           height={BASE_CANVAS_HEIGHT}
-          className="absolute top-0 left-0 w-full h-full border-2 border-gray-300 rounded-lg shadow-lg"
+          className="border-2 border-gray-300 rounded-lg shadow-lg"
           style={{
             touchAction: 'none',
             width: canvasSize.width,
-            height: canvasSize.height
+            height: canvasSize.height,
+            maxWidth: '100%',
+            maxHeight: '100%',
+            objectFit: 'contain'
           }}
         />
-        
         <GameOverlay score={score} gameOver={gameOver} />
       </div>
 
       {isMobile && gameStarted && !gameOver && (
-        <div className="mt-4">
+        <div className="mt-4 w-full max-w-[400px]">
           <TouchControls onControlPress={handleControlPress} />
         </div>
       )}
