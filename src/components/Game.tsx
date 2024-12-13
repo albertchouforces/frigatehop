@@ -7,7 +7,7 @@ import { TouchControls } from './TouchControls';
 import { isMobile } from 'react-device-detect';
 
 const CANVAS_ASPECT_RATIO = 800 / 600;
-const MAX_CANVAS_WIDTH = 800;
+const MAX_CANVAS_WIDTH = isMobile ? 1200 : 800; // Increased max width for mobile
 const BASE_CANVAS_WIDTH = 800;
 const BASE_CANVAS_HEIGHT = 600;
 
@@ -33,10 +33,12 @@ export const Game = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       
-      // Calculate available space considering the padding
-      const padding = isMobile ? 8 : 16; // Reduced padding for mobile
+      // Calculate available space with mobile-optimized padding
+      const padding = isMobile ? 12 : 16;
       const availableWidth = viewportWidth - (padding * 2);
-      const availableHeight = viewportHeight - (padding * 2);
+      // On mobile, reserve more space for controls
+      const controlsHeight = isMobile ? 180 : 0;
+      const availableHeight = viewportHeight - (padding * 2) - controlsHeight;
 
       // Calculate dimensions maintaining aspect ratio
       let width = availableWidth;
@@ -52,6 +54,15 @@ export const Game = () => {
       if (width > MAX_CANVAS_WIDTH) {
         width = MAX_CANVAS_WIDTH;
         height = width / CANVAS_ASPECT_RATIO;
+      }
+
+      // On mobile, ensure minimum size for playability
+      if (isMobile) {
+        const minWidth = 320;
+        if (width < minWidth) {
+          width = minWidth;
+          height = width / CANVAS_ASPECT_RATIO;
+        }
       }
 
       setCanvasSize({
@@ -95,11 +106,12 @@ export const Game = () => {
     height: '100%',
     maxWidth: `${MAX_CANVAS_WIDTH}px`,
     margin: '0 auto',
-    padding: isMobile ? '8px' : '16px',
+    padding: isMobile ? '12px' : '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: isMobile ? '16px' : '8px',
   };
 
   const canvasContainerStyle = {
@@ -153,7 +165,7 @@ export const Game = () => {
       </div>
 
       {isMobile && gameStarted && !gameOver && (
-        <div className="mt-4 w-full max-w-[400px]">
+        <div className="w-full max-w-[500px] px-2">
           <TouchControls onControlPress={handleControlPress} />
         </div>
       )}
