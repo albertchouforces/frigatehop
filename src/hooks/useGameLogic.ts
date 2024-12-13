@@ -1,4 +1,4 @@
-import { useCallback, RefObject, useState } from 'react';
+import { useCallback, RefObject } from 'react';
 import { ASSETS } from './useGameAssets';
 
 interface GameObject {
