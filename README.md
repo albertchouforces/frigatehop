@@ -1,4 +1,4 @@
-## Copy of FrigateHop, by Srcbook
+## Copy of Copy of FrigateHop, by Srcbook
 
 This app was created using https://srcbook.com.
 Need help or want to join the community? Join our [Discord](https://discord.gg/shDEGBSe2d).

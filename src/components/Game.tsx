@@ -6,8 +6,13 @@ import { useGameAssets } from '../hooks/useGameAssets';
 import { TouchControls } from './TouchControls';
 import { isMobile } from 'react-device-detect';
 
+const CANVAS_ASPECT_RATIO = 800 / 600;
+const MAX_CANVAS_WIDTH = 800;
+
 export const Game = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -16,6 +21,25 @@ export const Game = () => {
 
   useEffect(() => {
     loadAssets();
+  }, []);
+
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (!containerRef.current) return;
+
+      const containerWidth = containerRef.current.clientWidth;
+      const maxWidth = Math.min(containerWidth, MAX_CANVAS_WIDTH);
+      const height = maxWidth / CANVAS_ASPECT_RATIO;
+
+      setCanvasSize({
+        width: maxWidth,
+        height: height
+      });
+    };
+
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
   }, []);
 
   useEffect(() => {
@@ -37,49 +61,53 @@ export const Game = () => {
     setScore(0);
   };
 
-  // Function to handle mobile control presses
   const handleControlPress = (key: string) => {
     if (gameStarted && !gameOver) {
       handleKeyPress(key);
     }
   };
 
-  // Calculate canvas size based on device
-  const getCanvasSize = () => {
-    if (isMobile) {
-      const maxWidth = Math.min(window.innerWidth - 32, 800);
-      const aspectRatio = 800 / 600;
-      return {
-        width: maxWidth,
-        height: maxWidth / aspectRatio
-      };
-    }
-    return { width: 800, height: 600 };
-  };
-
-  const canvasSize = getCanvasSize();
-
   return (
-    <div className="relative">
-      <canvas
-        ref={canvasRef}
-        width={canvasSize.width}
-        height={canvasSize.height}
-        className="border-2 border-gray-300 rounded-lg shadow-lg"
-        style={{
-          width: canvasSize.width,
-          height: canvasSize.height
+    <div 
+      ref={containerRef}
+      className="relative w-full max-w-[800px] mx-auto px-4"
+    >
+      <div 
+        className="relative"
+        style={{ 
+          paddingBottom: `${(1 / CANVAS_ASPECT_RATIO) * 100}%`,
+          touchAction: 'none'
         }}
-      />
-      <GameOverlay score={score} gameOver={gameOver} />
-      {!gameStarted && assetsLoaded && <StartScreen onStartGame={handleStartGame} />}
-      {!assetsLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50">
-          <div className="text-white text-xl">Loading assets...</div>
-        </div>
-      )}
+      >
+        <canvas
+          ref={canvasRef}
+          width={800}
+          height={600}
+          className="absolute top-0 left-0 w-full h-full border-2 border-gray-300 rounded-lg shadow-lg"
+          style={{
+            touchAction: 'none'
+          }}
+        />
+        
+        <GameOverlay score={score} gameOver={gameOver} />
+        
+        {!gameStarted && assetsLoaded && (
+          <div className="absolute inset-0">
+            <StartScreen onStartGame={handleStartGame} />
+          </div>
+        )}
+        
+        {!assetsLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50">
+            <div className="text-white text-xl">Loading assets...</div>
+          </div>
+        )}
+      </div>
+
       {isMobile && gameStarted && !gameOver && (
-        <TouchControls onControlPress={handleControlPress} />
+        <div className="mt-4">
+          <TouchControls onControlPress={handleControlPress} />
+        </div>
       )}
     </div>
   );
