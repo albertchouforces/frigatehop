@@ -16,7 +16,7 @@ const MOBILE = {
   MIN_WIDTH: 320,
   CONTROLS_HEIGHT: 140,
   PADDING: 8,
-  MAX_WIDTH: 1200, // Increased for better tablet support
+  MAX_WIDTH: 1200, // For tablets
 };
 
 // Desktop constants
@@ -51,7 +51,7 @@ export const Game = () => {
       const { PADDING, MAX_WIDTH } = isMobile ? MOBILE : DESKTOP;
       
       // Calculate available space
-      const availableWidth = viewportWidth - (PADDING * 2);
+      const availableWidth = Math.min(viewportWidth - (PADDING * 2), MAX_WIDTH);
       const controlsSpace = isMobile ? MOBILE.CONTROLS_HEIGHT : 0;
       const availableHeight = viewportHeight - (PADDING * 2) - controlsSpace;
 
@@ -87,16 +87,16 @@ export const Game = () => {
 
       // Round values to prevent subpixel rendering issues
       setCanvasSize({
-        width: Math.round(width),
-        height: Math.round(height)
+        width: Math.round(Math.min(width, MAX_WIDTH)),
+        height: Math.round(Math.min(height, MAX_WIDTH / ASPECT_RATIO))
       });
     };
 
     // Initial update
     updateCanvasSize();
 
-    // Debounced resize handler
-    let resizeTimeout: NodeJS.Timeout;
+    // Debounced resize handler with proper type
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(updateCanvasSize, 100);
