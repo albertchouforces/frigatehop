@@ -29,8 +29,13 @@ export const Game = () => {
     const updateCanvasSize = () => {
       if (!containerRef.current) return;
 
-      const containerWidth = containerRef.current.clientWidth;
-      const maxWidth = Math.min(containerWidth, MAX_CANVAS_WIDTH);
+      // Get the viewport width and account for padding
+      const viewportWidth = Math.min(window.innerWidth, window.document.documentElement.clientWidth);
+      const padding = isMobile ? 16 : 32; // Less padding on mobile
+      const availableWidth = viewportWidth - (padding * 2);
+      
+      // Determine the maximum width while respecting constraints
+      const maxWidth = Math.min(availableWidth, MAX_CANVAS_WIDTH);
       const height = maxWidth / CANVAS_ASPECT_RATIO;
 
       setCanvasSize({
@@ -69,18 +74,57 @@ export const Game = () => {
     }
   };
 
+  const containerStyle = {
+    width: '100%',
+    maxWidth: `${MAX_CANVAS_WIDTH}px`,
+    margin: '0 auto',
+    padding: isMobile ? '8px' : '16px',
+  };
+
+  const wrapperStyle = {
+    position: 'relative' as const,
+    width: '100%',
+    paddingBottom: `${(1 / CANVAS_ASPECT_RATIO) * 100}%`,
+  };
+
+  const contentStyle = {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
+  if (!gameStarted && assetsLoaded) {
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div style={wrapperStyle}>
+          <div style={contentStyle}>
+            <StartScreen onStartGame={handleStartGame} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!assetsLoaded) {
+    return (
+      <div ref={containerRef} style={containerStyle}>
+        <div style={wrapperStyle}>
+          <div style={contentStyle} className="bg-gray-900/50">
+            <div className="text-white text-xl">Loading assets...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full max-w-[800px] mx-auto px-4"
-    >
-      <div 
-        className="relative"
-        style={{ 
-          paddingBottom: `${(1 / CANVAS_ASPECT_RATIO) * 100}%`,
-          touchAction: 'none'
-        }}
-      >
+    <div ref={containerRef} style={containerStyle}>
+      <div style={wrapperStyle}>
         <canvas
           ref={canvasRef}
           width={BASE_CANVAS_WIDTH}
@@ -94,18 +138,6 @@ export const Game = () => {
         />
         
         <GameOverlay score={score} gameOver={gameOver} />
-        
-        {!gameStarted && assetsLoaded && (
-          <div className="absolute inset-0">
-            <StartScreen onStartGame={handleStartGame} />
-          </div>
-        )}
-        
-        {!assetsLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50">
-            <div className="text-white text-xl">Loading assets...</div>
-          </div>
-        )}
       </div>
 
       {isMobile && gameStarted && !gameOver && (
