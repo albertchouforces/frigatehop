@@ -68,15 +68,6 @@ export const useGameLogic = (
   let isTransitioning = false;
   let transitionStartTime = 0;
 
-  // Scale a coordinate from base canvas size to actual size
-  const scaleCoord = (x: number, y: number) => ({
-    x: x * scaleX,
-    y: y * scaleY
-  });
-
-  // Scale a value based on canvas width ratio
-  const scaleValue = (value: number) => value * scaleX;
-
   const createWakeParticle = () => {
     const particleCount = 3;
     const shipCenterX = player.x + player.width / 2;
