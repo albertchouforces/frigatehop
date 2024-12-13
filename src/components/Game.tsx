@@ -34,10 +34,10 @@ export const Game = () => {
       const viewportHeight = window.innerHeight;
       
       // Calculate available space with mobile-optimized padding
-      const padding = isMobile ? 8 : 16; // Reduced padding for mobile
+      const padding = isMobile ? 12 : 16;
       const availableWidth = viewportWidth - (padding * 2);
-      // On mobile, reserve less space for controls to maximize game area
-      const controlsHeight = isMobile ? 140 : 0; // Reduced controls height
+      // On mobile, reserve more space for controls
+      const controlsHeight = isMobile ? 180 : 0;
       const availableHeight = viewportHeight - (padding * 2) - controlsHeight;
 
       // Calculate dimensions maintaining aspect ratio
@@ -106,12 +106,12 @@ export const Game = () => {
     height: '100%',
     maxWidth: `${MAX_CANVAS_WIDTH}px`,
     margin: '0 auto',
-    padding: isMobile ? '8px' : '16px', // Reduced padding for mobile
+    padding: isMobile ? '12px' : '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: isMobile ? '12px' : '16px', // Reduced gap for mobile
+    gap: isMobile ? '16px' : '8px',
   };
 
   const canvasContainerStyle = {
@@ -145,16 +145,15 @@ export const Game = () => {
   }
 
   return (
-    <div ref={containerRef} style={containerStyle} className="min-h-[100dvh]">
-      <div style={canvasContainerStyle} className="flex-1">
+    <div ref={containerRef} style={containerStyle}>
+      <div style={canvasContainerStyle}>
         <canvas
           ref={canvasRef}
           width={BASE_CANVAS_WIDTH}
           height={BASE_CANVAS_HEIGHT}
-          className={`border-2 border-gray-300 rounded-lg shadow-lg ${
-            isMobile ? 'touch-none' : ''
-          }`}
+          className="border-2 border-gray-300 rounded-lg shadow-lg"
           style={{
+            touchAction: 'none',
             width: canvasSize.width,
             height: canvasSize.height,
             maxWidth: '100%',
