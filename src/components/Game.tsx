@@ -15,7 +15,7 @@ const ASPECT_RATIO = BASE_CANVAS_WIDTH / BASE_CANVAS_HEIGHT;
 const MOBILE = {
   MIN_WIDTH: 320,
   CONTROLS_HEIGHT: 140,
-  PADDING: 8,
+  PADDING: 4,
   MAX_WIDTH: 1200, // For tablets
 };
 
@@ -51,31 +51,30 @@ export const Game = () => {
       const { PADDING, MAX_WIDTH } = isMobile ? MOBILE : DESKTOP;
       
       // Calculate available space
-      const availableWidth = Math.min(viewportWidth - (PADDING * 2), MAX_WIDTH);
+      let availableWidth = Math.min(viewportWidth - (PADDING * 2), MAX_WIDTH);
       const controlsSpace = isMobile ? MOBILE.CONTROLS_HEIGHT : 0;
-      const availableHeight = viewportHeight - (PADDING * 2) - controlsSpace;
+      let availableHeight = viewportHeight - (PADDING * 2) - controlsSpace;
+
+      // Account for header and footer space in mobile
+      if (isMobile) {
+        availableHeight -= 140; // Approximate space for header and footer
+      }
 
       let width: number;
       let height: number;
 
       if (isMobile) {
-        // Mobile-first approach: start with available width
-        width = Math.max(MOBILE.MIN_WIDTH, Math.min(availableWidth, MOBILE.MAX_WIDTH));
+        // Mobile-first: maximize width first
+        width = Math.max(MOBILE.MIN_WIDTH, availableWidth);
         height = width / ASPECT_RATIO;
 
-        // If height exceeds available space, recalculate based on height
+        // If height exceeds available space, scale down proportionally
         if (height > availableHeight) {
           height = availableHeight;
           width = height * ASPECT_RATIO;
         }
-
-        // Ensure minimum width is maintained
-        if (width < MOBILE.MIN_WIDTH) {
-          width = MOBILE.MIN_WIDTH;
-          height = width / ASPECT_RATIO;
-        }
       } else {
-        // Desktop approach: maintain aspect ratio within bounds
+        // Desktop approach
         width = Math.min(availableWidth, DESKTOP.MAX_WIDTH);
         height = width / ASPECT_RATIO;
 
@@ -87,28 +86,26 @@ export const Game = () => {
 
       // Round values to prevent subpixel rendering issues
       setCanvasSize({
-        width: Math.round(Math.min(width, MAX_WIDTH)),
-        height: Math.round(Math.min(height, MAX_WIDTH / ASPECT_RATIO))
+        width: Math.round(width),
+        height: Math.round(height)
       });
     };
 
     // Initial update
     updateCanvasSize();
 
-    // Debounced resize handler with proper type
-    let resizeTimeout: ReturnType<typeof setTimeout>;
+    // Handle resize and orientation changes
     const handleResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(updateCanvasSize, 100);
+      requestAnimationFrame(updateCanvasSize);
     };
 
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', updateCanvasSize);
-
+    window.addEventListener('orientationchange', handleResize);
+    
+    // Clean up
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', updateCanvasSize);
-      clearTimeout(resizeTimeout);
+      window.removeEventListener('orientationchange', handleResize);
     };
   }, []);
 
@@ -137,10 +134,8 @@ export const Game = () => {
     }
   };
 
-  // Mobile-optimized container styles
   const containerStyle = {
     width: '100%',
-    height: '100%',
     maxWidth: isMobile ? `${MOBILE.MAX_WIDTH}px` : `${DESKTOP.MAX_WIDTH}px`,
     margin: '0 auto',
     padding: `${isMobile ? MOBILE.PADDING : DESKTOP.PADDING}px`,
@@ -148,7 +143,8 @@ export const Game = () => {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: isMobile ? '12px' : '16px',
+    gap: isMobile ? '8px' : '16px',
+    flex: 1,
   };
 
   const canvasContainerStyle = {
@@ -163,7 +159,7 @@ export const Game = () => {
   // Loading state
   if (!assetsLoaded) {
     return (
-      <div ref={containerRef} style={containerStyle}>
+      <div ref={containerRef} style={containerStyle} className="h-full">
         <div style={canvasContainerStyle}>
           <div className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-lg shadow-lg">
             <div className="text-white text-xl">Loading assets...</div>
@@ -176,8 +172,8 @@ export const Game = () => {
   // Start screen
   if (!gameStarted) {
     return (
-      <div ref={containerRef} style={containerStyle}>
-        <div style={canvasContainerStyle}>
+      <div ref={containerRef} style={containerStyle} className="h-full">
+        <div style={canvasContainerStyle} className="flex-1">
           <StartScreen onStartGame={handleStartGame} />
         </div>
       </div>
@@ -186,8 +182,8 @@ export const Game = () => {
 
   // Game screen
   return (
-    <div ref={containerRef} style={containerStyle}>
-      <div style={canvasContainerStyle}>
+    <div ref={containerRef} style={containerStyle} className="h-full">
+      <div style={canvasContainerStyle} className="flex-1">
         <canvas
           ref={canvasRef}
           width={BASE_CANVAS_WIDTH}
@@ -207,7 +203,10 @@ export const Game = () => {
       </div>
 
       {isMobile && gameStarted && !gameOver && (
-        <div className="w-full px-2" style={{ maxWidth: `${canvasSize.width}px` }}>
+        <div 
+          className="w-full px-2" 
+          style={{ maxWidth: `${canvasSize.width}px`, height: `${MOBILE.CONTROLS_HEIGHT}px` }}
+        >
           <TouchControls onControlPress={handleControlPress} />
         </div>
       )}

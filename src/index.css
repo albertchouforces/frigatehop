@@ -4,4 +4,46 @@
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Add support for iOS safe areas */
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+/* Safe area utilities */
+.mt-safe {
+  margin-top: max(0.5rem, var(--sat));
+}
+
+.mb-safe {
+  margin-bottom: max(0.5rem, var(--sab));
+}
+
+/* Prevent overscroll behavior */
+html, body {
+  overscroll-behavior: none;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Disable pull-to-refresh on mobile */
+@media screen and (max-width: 768px) {
+  html, body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+  }
 }
