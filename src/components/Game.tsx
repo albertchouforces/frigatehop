@@ -7,14 +7,11 @@ import { TouchControls } from './TouchControls';
 import { isMobile } from 'react-device-detect';
 
 const CANVAS_ASPECT_RATIO = 800 / 600;
-const MAX_CANVAS_WIDTH = isMobile ? 1200 : 800; // Increased max width for mobile
-const BASE_CANVAS_WIDTH = 800;
-const BASE_CANVAS_HEIGHT = 600;
 
 export const Game = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: BASE_CANVAS_WIDTH, height: BASE_CANVAS_HEIGHT });
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -33,42 +30,44 @@ export const Game = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       
-      // Calculate available space with mobile-optimized padding
-      const padding = isMobile ? 12 : 16;
-      const availableWidth = viewportWidth - (padding * 2);
-      // On mobile, reserve more space for controls
-      const controlsHeight = isMobile ? 180 : 0;
-      const availableHeight = viewportHeight - (padding * 2) - controlsHeight;
-
-      // Calculate dimensions maintaining aspect ratio
-      let width = availableWidth;
-      let height = width / CANVAS_ASPECT_RATIO;
-
-      // If height exceeds available height, scale based on height instead
-      if (height > availableHeight) {
-        height = availableHeight;
-        width = height * CANVAS_ASPECT_RATIO;
-      }
-
-      // Apply max width constraint
-      if (width > MAX_CANVAS_WIDTH) {
-        width = MAX_CANVAS_WIDTH;
-        height = width / CANVAS_ASPECT_RATIO;
-      }
-
-      // On mobile, ensure minimum size for playability
       if (isMobile) {
-        const minWidth = 320;
-        if (width < minWidth) {
-          width = minWidth;
-          height = width / CANVAS_ASPECT_RATIO;
-        }
-      }
+        // On mobile, use the full viewport width and calculate height
+        const controlsHeight = 180; // Height reserved for controls
+        const availableHeight = viewportHeight - controlsHeight;
+        
+        // Calculate dimensions maintaining aspect ratio
+        let width = viewportWidth;
+        let height = width / CANVAS_ASPECT_RATIO;
 
-      setCanvasSize({
-        width,
-        height
-      });
+        // If height exceeds available height, scale based on height
+        if (height > availableHeight) {
+          height = availableHeight;
+          width = height * CANVAS_ASPECT_RATIO;
+        }
+
+        setCanvasSize({
+          width,
+          height
+        });
+      } else {
+        // For desktop, keep the existing logic
+        const padding = 32;
+        const availableWidth = viewportWidth - padding;
+        const availableHeight = viewportHeight - padding;
+
+        let width = Math.min(800, availableWidth);
+        let height = width / CANVAS_ASPECT_RATIO;
+
+        if (height > availableHeight) {
+          height = availableHeight;
+          width = height * CANVAS_ASPECT_RATIO;
+        }
+
+        setCanvasSize({
+          width,
+          height
+        });
+      }
     };
 
     updateCanvasSize();
@@ -104,9 +103,6 @@ export const Game = () => {
   const containerStyle = {
     width: '100%',
     height: '100%',
-    maxWidth: `${MAX_CANVAS_WIDTH}px`,
-    margin: '0 auto',
-    padding: isMobile ? '12px' : '16px',
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
@@ -145,12 +141,12 @@ export const Game = () => {
   }
 
   return (
-    <div ref={containerRef} style={containerStyle}>
+    <div ref={containerRef} style={containerStyle} className="h-[100dvh] overflow-hidden">
       <div style={canvasContainerStyle}>
         <canvas
           ref={canvasRef}
-          width={BASE_CANVAS_WIDTH}
-          height={BASE_CANVAS_HEIGHT}
+          width={800}
+          height={600}
           className="border-2 border-gray-300 rounded-lg shadow-lg"
           style={{
             touchAction: 'none',
@@ -165,7 +161,7 @@ export const Game = () => {
       </div>
 
       {isMobile && gameStarted && !gameOver && (
-        <div className="w-full max-w-[500px] px-2">
+        <div className="w-full px-2 pb-safe">
           <TouchControls onControlPress={handleControlPress} />
         </div>
       )}
