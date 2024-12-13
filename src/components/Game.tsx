@@ -8,16 +8,18 @@ import { isMobile } from 'react-device-detect';
 
 const CANVAS_ASPECT_RATIO = 800 / 600;
 const MAX_CANVAS_WIDTH = 800;
+const BASE_CANVAS_WIDTH = 800;
+const BASE_CANVAS_HEIGHT = 600;
 
 export const Game = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+  const [canvasSize, setCanvasSize] = useState({ width: BASE_CANVAS_WIDTH, height: BASE_CANVAS_HEIGHT });
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const { assetsLoaded, loadAssets } = useGameAssets();
-  const { initGame, handleKeyPress } = useGameLogic(canvasRef, setScore, setGameOver);
+  const { initGame, handleKeyPress } = useGameLogic(canvasRef, setScore, setGameOver, canvasSize);
 
   useEffect(() => {
     loadAssets();
@@ -81,11 +83,13 @@ export const Game = () => {
       >
         <canvas
           ref={canvasRef}
-          width={800}
-          height={600}
+          width={BASE_CANVAS_WIDTH}
+          height={BASE_CANVAS_HEIGHT}
           className="absolute top-0 left-0 w-full h-full border-2 border-gray-300 rounded-lg shadow-lg"
           style={{
-            touchAction: 'none'
+            touchAction: 'none',
+            width: canvasSize.width,
+            height: canvasSize.height
           }}
         />
         

@@ -78,7 +78,7 @@ export const StartScreen = ({ onStartGame }: StartScreenProps) => {
           </svg>
         </div>
         <div className="space-y-2 text-gray-300 mb-6">
-          <p>Navigate the Halifax-class Frigate through dangerous waters</p>
+          <p>Navigate the Frigate through dangerous waters</p>
           <p>Avoid sea mines and icebergs</p>
           <p>Use arrow keys to move</p>
           <p>Reach the finish line to score points!</p>

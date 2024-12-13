@@ -28,11 +28,23 @@ interface CollisionBox {
   height: number;
 }
 
+interface CanvasSize {
+  width: number;
+  height: number;
+}
+
+const BASE_WIDTH = 800;
+const BASE_HEIGHT = 600;
+
 export const useGameLogic = (
   canvasRef: RefObject<HTMLCanvasElement>,
   setScore: (score: number) => void,
-  setGameOver: (gameOver: boolean) => void
+  setGameOver: (gameOver: boolean) => void,
+  canvasSize: CanvasSize
 ) => {
+  const scaleX = canvasSize.width / BASE_WIDTH;
+  const scaleY = canvasSize.height / BASE_HEIGHT;
+
   let player = {
     x: 400,
     y: 550,
@@ -55,6 +67,15 @@ export const useGameLogic = (
   let lastMoveTime = Date.now();
   let isTransitioning = false;
   let transitionStartTime = 0;
+
+  // Scale a coordinate from base canvas size to actual size
+  const scaleCoord = (x: number, y: number) => ({
+    x: x * scaleX,
+    y: y * scaleY
+  });
+
+  // Scale a value based on canvas width ratio
+  const scaleValue = (value: number) => value * scaleX;
 
   const createWakeParticle = () => {
     const particleCount = 3;
@@ -100,8 +121,8 @@ export const useGameLogic = (
         y: spawnY,
         alpha: 0.6,
         size: 2 + Math.random() * 2,
-        velocityX,
-        velocityY
+        velocityX: velocityX * scaleX,
+        velocityY: velocityY * scaleY
       });
     }
   };
@@ -110,7 +131,7 @@ export const useGameLogic = (
     wakeParticles = wakeParticles.filter(particle => {
       particle.x += particle.velocityX;
       particle.y += particle.velocityY;
-      particle.size += 0.15;
+      particle.size += 0.15 * scaleX;
       particle.alpha -= 0.025;
       return particle.alpha > 0;
     });
@@ -130,9 +151,9 @@ export const useGameLogic = (
   const getLevelConfig = (level: number) => {
     return {
       rows: Math.min(1 + Math.floor((level - 1) / 2), 6),
-      speed: baseSpeed + (level * 0.2),
+      speed: (baseSpeed + (level * 0.2)) * scaleX,
       mineChance: Math.min(0.1 + (level * 0.03), 0.5),
-      rowSpacing: Math.min(80 + (level * 5), 120)
+      rowSpacing: Math.min(80 + (level * 5), 120) * scaleY
     };
   };
 
@@ -141,7 +162,7 @@ export const useGameLogic = (
     
     const rows = Array.from(
       { length: config.rows }, 
-      (_, i) => 100 + (i * config.rowSpacing)
+      (_, i) => (100 + (i * config.rowSpacing)) * scaleY
     );
     
     obstacles = rows.flatMap((y) => {
@@ -150,11 +171,11 @@ export const useGameLogic = (
       return Array.from({ length: obstaclesInRow }, () => {
         const isWide = Math.random() > 0.5;
         return {
-          x: Math.random() * 700,
+          x: Math.random() * (BASE_WIDTH * scaleX),
           y,
-          width: isWide ? 80 : 40,
-          height: isWide ? 60 : 40,
-          speed: config.speed + (Math.random() * 0.5),
+          width: (isWide ? 80 : 40) * scaleX,
+          height: (isWide ? 60 : 40) * scaleY,
+          speed: config.speed + (Math.random() * 0.5 * scaleX),
           direction: Math.random() > 0.5 ? 1 : -1,
           type: Math.random() < config.mineChance ? 'mine' : 'iceberg',
           rotation: Math.random() * Math.PI * 2,
@@ -164,7 +185,7 @@ export const useGameLogic = (
   };
 
   const getPlayerCollisionBox = (): CollisionBox => {
-    const padding = player.orientation === 'up' || player.orientation === 'down' ? 12 : 8;
+    const padding = (player.orientation === 'up' || player.orientation === 'down' ? 12 : 8) * scaleX;
     return {
       x: player.x + padding,
       y: player.y + padding,
@@ -214,7 +235,7 @@ export const useGameLogic = (
       const centerY = obstacle.y + obstacle.height / 2;
 
       if (obstacle.type === 'mine') {
-        const bobAmount = Math.sin(Date.now() / 500) * 3;
+        const bobAmount = Math.sin(Date.now() / 500) * 3 * scaleY;
         ctx.translate(centerX, centerY + bobAmount);
         ctx.rotate(obstacle.rotation || 0);
         ctx.drawImage(
@@ -241,12 +262,12 @@ export const useGameLogic = (
   const drawLevel = (ctx: CanvasRenderingContext2D) => {
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.font = 'bold 24px Inter';
-    ctx.fillText(`Level ${currentLevel}`, 20, 580);
+    ctx.font = `bold ${24 * scaleY}px Inter`;
+    ctx.fillText(`Level ${currentLevel}`, 20 * scaleX, 580 * scaleY);
     
     const config = getLevelConfig(currentLevel);
-    ctx.font = '16px Inter';
-    ctx.fillText(`Rows: ${config.rows}`, 140, 580);
+    ctx.font = `${16 * scaleY}px Inter`;
+    ctx.fillText(`Rows: ${config.rows}`, 140 * scaleX, 580 * scaleY);
     ctx.restore();
   };
 
@@ -255,7 +276,7 @@ export const useGameLogic = (
       const alpha = Math.min((Date.now() - transitionStartTime) / 1000, 1);
       ctx.save();
       ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.7})`;
-      ctx.font = 'bold 36px Inter';
+      ctx.font = `bold ${36 * scaleY}px Inter`;
       const text = `Level ${currentLevel} Complete!`;
       const metrics = ctx.measureText(text);
       const x = (ctx.canvas.width - metrics.width) / 2;
@@ -266,10 +287,10 @@ export const useGameLogic = (
   };
 
   const drawGoalZone = (ctx: CanvasRenderingContext2D) => {
-    ctx.drawImage(ASSETS.goal, 0, 0, 800, 50);
+    ctx.drawImage(ASSETS.goal, 0, 0, canvasSize.width, 50 * scaleY);
     if (goalAnimation > 0) {
       ctx.fillStyle = `rgba(255, 255, 255, ${goalAnimation})`;
-      ctx.fillRect(0, 0, 800, 50);
+      ctx.fillRect(0, 0, canvasSize.width, 50 * scaleY);
       goalAnimation -= 0.02;
     }
   };
@@ -279,8 +300,8 @@ export const useGameLogic = (
     
     obstacles.forEach((obstacle) => {
       obstacle.x += obstacle.speed * obstacle.direction;
-      if (obstacle.x > 800) obstacle.x = -obstacle.width;
-      if (obstacle.x < -obstacle.width) obstacle.x = 800;
+      if (obstacle.x > canvasSize.width) obstacle.x = -obstacle.width;
+      if (obstacle.x < -obstacle.width) obstacle.x = canvasSize.width;
       
       if (obstacle.type === 'mine') {
         obstacle.rotation = (obstacle.rotation || 0) + 0.01;
@@ -294,7 +315,7 @@ export const useGameLogic = (
     const playerBox = getPlayerCollisionBox();
     
     return obstacles.some((obstacle) => {
-      const padding = obstacle.type === 'mine' ? 12 : 8;
+      const padding = (obstacle.type === 'mine' ? 12 : 8) * scaleX;
       const obstacleBox = {
         x: obstacle.x + padding,
         y: obstacle.y + padding,
@@ -316,8 +337,8 @@ export const useGameLogic = (
     
     setTimeout(() => {
       currentLevel++;
-      player.y = 550;
-      player.lastY = 550;
+      player.y = 550 * scaleY;
+      player.lastY = 550 * scaleY;
       createObstacles();
       isTransitioning = false;
     }, 1000);
@@ -329,21 +350,21 @@ export const useGameLogic = (
 
     if (!ctx || !canvas) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvasSize.width, canvasSize.height);
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvasSize.height);
     gradient.addColorStop(0, '#a8d5ff');
     gradient.addColorStop(1, '#015cc7');
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < canvas.height; i += 20) {
+    ctx.lineWidth = 2 * scaleX;
+    for (let i = 0; i < canvasSize.height; i += 20 * scaleY) {
       ctx.beginPath();
       ctx.moveTo(0, i);
-      for (let x = 0; x < canvas.width; x += 50) {
-        const y = i + Math.sin((x + Date.now() / 1000) / 30) * 5;
+      for (let x = 0; x < canvasSize.width; x += 50 * scaleX) {
+        const y = i + Math.sin((x + Date.now() / 1000) / (30 * scaleX)) * (5 * scaleY);
         ctx.lineTo(x, y);
       }
       ctx.stroke();
@@ -365,17 +386,17 @@ export const useGameLogic = (
       return;
     }
 
-    if (player.y < 50 && !isTransitioning) {
+    if (player.y < 50 * scaleY && !isTransitioning) {
       startLevelTransition();
     }
 
     animationFrameId = requestAnimationFrame(gameLoop);
-  }, [canvasRef, setGameOver, setScore]);
+  }, [canvasRef, setGameOver, setScore, canvasSize]);
 
   const handleKeyPress = useCallback((key: string) => {
     if (isGameOver || isTransitioning) return;
 
-    const moveDistance = 15;
+    const moveDistance = 15 * scaleX;
     const now = Date.now();
     const timeDiff = now - lastMoveTime;
     
@@ -397,7 +418,7 @@ export const useGameLogic = (
         }
         break;
       case 'ArrowDown':
-        player.y = Math.min(570, player.y + moveDistance);
+        player.y = Math.min(canvasSize.height - player.height, player.y + moveDistance);
         player.orientation = 'down';
         break;
       case 'ArrowLeft':
@@ -405,7 +426,7 @@ export const useGameLogic = (
         player.orientation = 'left';
         break;
       case 'ArrowRight':
-        player.x = Math.min(720, player.x + moveDistance);
+        player.x = Math.min(canvasSize.width - player.width, player.x + moveDistance);
         player.orientation = 'right';
         break;
     }
@@ -417,7 +438,7 @@ export const useGameLogic = (
       x: player.x - oldX,
       y: player.y - oldY
     };
-  }, [setScore]);
+  }, [setScore, canvasSize]);
 
   const initGame = useCallback(() => {
     isGameOver = false;
@@ -426,9 +447,21 @@ export const useGameLogic = (
     wakeParticles = [];
     isTransitioning = false;
     setScore(0);
+
+    // Initialize player position with scaled coordinates
+    player = {
+      ...player,
+      x: 400 * scaleX,
+      y: 550 * scaleY,
+      lastX: 400 * scaleX,
+      lastY: 550 * scaleY,
+      width: 80 * scaleX,
+      height: 30 * scaleY,
+    };
+
     createObstacles();
     gameLoop();
-  }, [gameLoop, setScore]);
+  }, [gameLoop, setScore, canvasSize]);
 
   return { initGame, handleKeyPress };
 };
